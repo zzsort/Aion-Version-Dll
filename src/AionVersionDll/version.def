@@ -1,0 +1,19 @@
+LIBRARY VERSION
+EXPORTS
+
+GetFileVersionInfoA = zzGetFileVersionInfoA
+GetFileVersionInfoExA = zzGetFileVersionInfoExA
+GetFileVersionInfoExW = zzGetFileVersionInfoExW
+GetFileVersionInfoSizeA = zzGetFileVersionInfoSizeA
+GetFileVersionInfoSizeExA = zzGetFileVersionInfoSizeExA
+GetFileVersionInfoSizeExW = zzGetFileVersionInfoSizeExW
+GetFileVersionInfoSizeW = zzGetFileVersionInfoSizeW
+GetFileVersionInfoW = zzGetFileVersionInfoW
+VerFindFileA = zzVerFindFileA
+VerFindFileW = zzVerFindFileW
+VerInstallFileA = zzVerInstallFileA
+VerInstallFileW = zzVerInstallFileW
+VerLanguageNameA = zzVerLanguageNameA
+VerLanguageNameW = zzVerLanguageNameW
+VerQueryValueA = zzVerQueryValueA
+VerQueryValueW = zzVerQueryValueW
