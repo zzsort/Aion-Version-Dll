@@ -10,6 +10,7 @@
 static const char s_ipToReplace[16] = "70.5.0.18";
 static char s_serverIp[16] = "";
 static bool s_needPatch = false;
+static bool s_gfxEnabled = false;
 
 bool GetServerIpFromCommandLine(char* buf, size_t bufsize) {
     const char* substr = strstr(GetCommandLineA(), "-ip:");
@@ -77,6 +78,59 @@ zzSetCursorPos(
     return result;
 }
 
+void EnableHighQualityGraphicsOptions()
+{
+    MEMORY_BASIC_INFORMATION mbi = {};
+    if (!VirtualQuery(GetModuleHandle(L"crysystem") + 0x1000, &mbi, sizeof(mbi))) {
+        return;
+    }
+
+    if (!(mbi.AllocationProtect & 0xF0)) {
+        return;
+    }
+
+    DWORD oldProtect;
+    if (!VirtualProtect(mbi.BaseAddress, mbi.RegionSize, PAGE_EXECUTE_READWRITE, &oldProtect)) {
+        return;
+    }
+
+    char* c = (char*)mbi.BaseAddress;
+    char* end = c + mbi.RegionSize - sizeof(DWORD);
+
+    for (; c < end; c++) {
+        DWORD* d = (DWORD*)c;
+        if (*d == 1920 * 1200) {
+            *d = 4096 * 4096;
+            char* e = c - 0x100;
+            char* e_end = c + 0x100;
+            e_end = min(end, e_end);
+            for (; e < e_end; e++) {
+                DWORD* d2 = (DWORD*)e;
+                if (*d2 == 2560 * 1600) {
+                    *d2 = 4096 * 4096;
+                    break;
+                }
+            }
+            break;
+        }
+    }
+
+    VirtualProtect(mbi.BaseAddress, mbi.RegionSize, oldProtect, &oldProtect);
+}
+
+static decltype(ChangeDisplaySettingsA) *real_ChangeDisplaySettingsA = ChangeDisplaySettingsA;
+LONG
+WINAPI
+zzChangeDisplaySettingsA(
+    _In_opt_ DEVMODEA* lpDevMode,
+    _In_ DWORD dwFlags) {
+    if (!s_gfxEnabled) {
+        EnableHighQualityGraphicsOptions();
+        s_gfxEnabled = true;
+    }
+    return real_ChangeDisplaySettingsA(lpDevMode, dwFlags);
+}
+
 void InstallPatch() 
 {
     DetourTransactionBegin();
@@ -91,6 +145,10 @@ void InstallPatch()
 
     if (strstr(GetCommandLineA(), "-win10-mouse-fix") > 0) {
         DetourAttach(&(PVOID&)real_SetCursorPos, zzSetCursorPos);
+    }
+
+    if (strstr(GetCommandLineA(), "-unlimited-gfx") > 0) {
+        DetourAttach(&(PVOID&)real_ChangeDisplaySettingsA, zzChangeDisplaySettingsA);
     }
 
     LONG error = DetourTransactionCommit();
