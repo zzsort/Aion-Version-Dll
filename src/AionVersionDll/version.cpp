@@ -1,10 +1,11 @@
 #define WIN32_LEAN_AND_MEAN
 #define _HAS_EXCEPTIONS 0
+#define _WINSOCK_DEPRECATED_NO_WARNINGS
+#define _CRT_SECURE_NO_WARNINGS
 
 #include <windows.h>
 #include <stdio.h>
-#define _WINSOCK_DEPRECATED_NO_WARNINGS
-#include "winsock2.h"
+#include <winsock2.h>
 #include "detours.h"
 
 static const char s_ipToReplace[16] = "70.5.0.18";
@@ -23,7 +24,7 @@ bool GetServerIpFromCommandLine(char* buf, size_t bufsize) {
     return false;
 }
 
-static unsigned long (PASCAL FAR *real_inet_addr)(_In_z_ const char FAR * cp) = inet_addr;
+static decltype(inet_addr) *real_inet_addr = inet_addr;
 unsigned long PASCAL FAR zzinet_addr(_In_z_ const char FAR * cp)
 {
     s_needPatch = true;
@@ -50,30 +51,148 @@ zzlstrcpynA(
     return real_lstrcpynA(lpString1, lpString2, iMaxLength);
 }
 
+
+HWND clientHwnd = nullptr;
+HWND activeHwnd = nullptr;
+int clientLeft, clientTop;
+bool isCursorHidden;
+bool mouseHookInstalled = false;
+
+int MakeMouseMoveWPARAM()
+{
+    return
+        (GetKeyState(VK_LBUTTON) & 0x8000) ? 0x0001 : 0 |
+        (GetKeyState(VK_RBUTTON) & 0x8000) ? 0x0002 : 0 |
+        (GetKeyState(VK_SHIFT) & 0x8000) ? 0x0004 : 0 |
+        (GetKeyState(VK_CONTROL) & 0x8000) ? 0x0008 : 0 |
+        (GetKeyState(VK_MBUTTON) & 0x8000) ? 0x0010 : 0 |
+        (GetKeyState(VK_XBUTTON1) & 0x8000) ? 0x0020 : 0 |
+        (GetKeyState(VK_XBUTTON2) & 0x8000) ? 0x0040 : 0;
+}
+
+LPARAM MakeMouseMoveLPARAM(int x, int y) {
+    return MAKELPARAM(x - clientLeft, y - clientTop);
+}
+
+bool AllButtonsUp() {
+    return (GetKeyState(VK_LBUTTON) & 0x8000) && (GetKeyState(VK_RBUTTON) & 0x8000) && (GetKeyState(VK_MBUTTON) & 0x8000);
+}
+
+bool getIsCursorHidden() {
+    CURSORINFO ci = {sizeof(ci)};
+    GetCursorInfo(&ci);
+    return (ci.flags & 3) == 0;
+}
+
+HWND GetAionHwnd() {
+    if (!clientHwnd) {
+        clientHwnd = GetActiveWindow();
+    }
+    return clientHwnd;
+}
+
+bool IsWindowedMode() {
+    return GetAionHwnd() && ((GetWindowLong(GetAionHwnd(), GWL_STYLE) & WS_CAPTION));
+}
+
+void WindowedMouseHookProc(int msg, MSLLHOOKSTRUCT* hs) {
+    switch (msg) {
+        case WM_LBUTTONDOWN:
+        case WM_RBUTTONDOWN:
+        case WM_MBUTTONDOWN:
+            if (!clientHwnd || GetForegroundWindow() != clientHwnd) {
+                return;
+            }
+
+            if (!activeHwnd) {
+                WINDOWINFO windowinfo = {sizeof(WINDOWINFO)};
+                GetWindowInfo(clientHwnd, &windowinfo);
+                clientLeft = windowinfo.rcClient.left;
+                clientTop = windowinfo.rcClient.top;
+                activeHwnd = clientHwnd;
+                isCursorHidden = false;
+            }
+            break;
+        case WM_LBUTTONUP:
+        case WM_RBUTTONUP:
+        case WM_MBUTTONUP:
+            if (AllButtonsUp()) {
+                activeHwnd = nullptr;
+            }
+            break;
+        case WM_MOUSEMOVE:
+            if (!activeHwnd) {
+                break;
+            }
+
+            if (!isCursorHidden) {
+                isCursorHidden = getIsCursorHidden();
+                if (!isCursorHidden) {
+                    break;
+                }
+            }
+
+            SendMessage(activeHwnd, WM_MOUSEMOVE, MakeMouseMoveWPARAM(), MakeMouseMoveLPARAM(hs->pt.x, hs->pt.y));
+            break;
+    }
+}
+
+LRESULT CALLBACK MouseProc(int nCode, WPARAM wParam, LPARAM lParam)
+{
+    if (nCode >= 0) {
+        if (IsWindowedMode()) {
+            WindowedMouseHookProc((int)wParam, (MSLLHOOKSTRUCT*)lParam);
+        } else {
+            // uninstalling the hook in fullscreen modes reduces an issue with the camera jumping/spinning.
+            PostThreadMessage(GetCurrentThreadId(), WM_QUIT, 0, 0);
+        }
+    }
+    return CallNextHookEx(nullptr, nCode, wParam, lParam);
+}
+
+DWORD WINAPI MouseFixThread(LPVOID lParam)
+{
+    HHOOK hook = SetWindowsHookEx(WH_MOUSE_LL, MouseProc, GetModuleHandle(0), 0);
+    if (hook) {
+        MSG message;
+        while (GetMessage(&message, nullptr, 0, 0) > 0) {
+            TranslateMessage(&message);
+            DispatchMessage(&message);
+        }
+
+        UnhookWindowsHookEx(hook);
+        mouseHookInstalled = false;
+    }
+    return 0;
+}
+
+void InstallHookIfNeeded() {
+    if (!mouseHookInstalled) {
+        if (IsWindowedMode()) {
+            mouseHookInstalled = true;
+            CreateThread(nullptr, 0, MouseFixThread, nullptr, 0, nullptr);
+        }
+    }
+}
+
 static decltype(SetCursorPos) *real_SetCursorPos = SetCursorPos;
 BOOL
 WINAPI
 zzSetCursorPos(
     _In_ int X,
     _In_ int Y) {
-    BOOL result = real_SetCursorPos(X, Y);
-    HWND hwnd = GetActiveWindow();
-    if (hwnd) {
 
+    BOOL result = real_SetCursorPos(X, Y);
+
+    InstallHookIfNeeded();
+
+    if (!IsWindowedMode())
+    {
         POINT pt;
         GetCursorPos(&pt);
-        ScreenToClient(hwnd, &pt);
+        ScreenToClient(clientHwnd, &pt);
 
-        WPARAM wParam = 
-            (GetKeyState(VK_LBUTTON) & 0x8000) ? 0x0001 : 0 |
-            (GetKeyState(VK_RBUTTON) & 0x8000) ? 0x0002 : 0 |
-            (GetKeyState(VK_SHIFT) & 0x8000) ? 0x0004 : 0 |
-            (GetKeyState(VK_CONTROL) & 0x8000) ? 0x0008 : 0 |
-            (GetKeyState(VK_MBUTTON) & 0x8000) ? 0x0010 : 0 |
-            (GetKeyState(VK_XBUTTON1) & 0x8000) ? 0x0020 : 0 |
-            (GetKeyState(VK_XBUTTON2) & 0x8000) ? 0x0040 : 0;
-
-        PostMessage(hwnd, WM_MOUSEMOVE, wParam, MAKELPARAM(pt.x, pt.y));
+        PostMessage(clientHwnd, WM_MOUSEMOVE, MakeMouseMoveWPARAM(), MAKELPARAM(pt.x, pt.y));
     }
     return result;
 }
@@ -131,6 +250,27 @@ zzChangeDisplaySettingsA(
     return real_ChangeDisplaySettingsA(lpDevMode, dwFlags);
 }
 
+bool GetOSVersion(RTL_OSVERSIONINFOW& osver) {
+    osver = {sizeof(osver)};
+    HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
+    if (hMod) {
+        typedef LONG(WINAPI* RtlGetVersionPtr)(PRTL_OSVERSIONINFOW);
+        RtlGetVersionPtr RtlGetVersion = (RtlGetVersionPtr)GetProcAddress(hMod, "RtlGetVersion");
+        if (RtlGetVersion) {
+            if (RtlGetVersion(&osver) == 0) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+bool NeedsWin10MouseFix() {
+    RTL_OSVERSIONINFOW osver;
+    return (GetOSVersion(osver) && osver.dwMajorVersion == 10 &&
+        osver.dwMinorVersion >= 0 && osver.dwBuildNumber >= 15063);
+}
+
 void InstallPatch() 
 {
     DetourTransactionBegin();
@@ -143,7 +283,11 @@ void InstallPatch()
         }
     }
 
-    if (strstr(GetCommandLineA(), "-win10-mouse-fix") > 0) {
+    if (strstr(GetCommandLineA(), "-win10-mouse-fix-autodetect") > 0) {
+        if (NeedsWin10MouseFix()) {
+            DetourAttach(&(PVOID&)real_SetCursorPos, zzSetCursorPos);
+        }
+    } else if (strstr(GetCommandLineA(), "-win10-mouse-fix") > 0) {
         DetourAttach(&(PVOID&)real_SetCursorPos, zzSetCursorPos);
     }
 
