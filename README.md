@@ -1,6 +1,9 @@
 # Aion-Version-Dll
 Aion 4.0 No-IP and Windows 10 mouse fix.
 
+New features for 1.3:
+- Fix a bug for the windowed mode mouse fix that could make it stop working after moving the window.
+
 New features for 1.2:
 - The Windows 10 mouse fix now works for windowed mode.
 - Added the option -win10-mouse-fix-autodetect which will automatically enable the mouse fix depending on the OS version.
@@ -13,7 +16,7 @@ Features:
 - Fixes the mouse issue on Windows 10 without needing to run a separate program. This feature is enabled by passing the -win10-mouse-fix command line argument to aion.bin.
 - The IP fix can be disabled with -disable-ip-fix in case you only want to use the mouse fix.
 
-Download: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.2.zip
+Download: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.3.zip
 
 To install, copy each version.dll to the respective bin32 or bin64 folder under the Aion client root.
 
