@@ -75,7 +75,7 @@ LPARAM MakeMouseMoveLPARAM(int x, int y) {
 }
 
 bool AllButtonsUp() {
-    return (GetKeyState(VK_LBUTTON) & 0x8000) && (GetKeyState(VK_RBUTTON) & 0x8000) && (GetKeyState(VK_MBUTTON) & 0x8000);
+    return !(GetKeyState(VK_LBUTTON) & 0x8000) && !(GetKeyState(VK_RBUTTON) & 0x8000) && !(GetKeyState(VK_MBUTTON) & 0x8000);
 }
 
 bool getIsCursorHidden() {
@@ -113,15 +113,13 @@ void WindowedMouseHookProc(int msg, MSLLHOOKSTRUCT* hs) {
                 isCursorHidden = false;
             }
             break;
-        case WM_LBUTTONUP:
-        case WM_RBUTTONUP:
-        case WM_MBUTTONUP:
-            if (AllButtonsUp()) {
-                activeHwnd = nullptr;
-            }
-            break;
         case WM_MOUSEMOVE:
             if (!activeHwnd) {
+                break;
+            }
+
+            if (AllButtonsUp()) {
+                activeHwnd = nullptr;
                 break;
             }
 
