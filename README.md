@@ -1,6 +1,10 @@
 # Aion-Version-Dll
 Aion 4.0 No-IP and Windows 10 mouse fix.
 
+New features for 1.4:
+- The IP fix now supports Aion 5.8.
+- Added -disable-xigncode command line option to prevent xigncode from loading. Only tested in 5.8.
+
 New features for 1.3:
 - Fix a bug for the windowed mode mouse fix that could make it stop working after moving the window.
 
