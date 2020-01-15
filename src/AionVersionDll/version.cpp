@@ -5,6 +5,8 @@
 
 #include <windows.h>
 #include <stdio.h>
+#include <string>
+#include <intrin.h>
 #include <winsock2.h>
 #include "detours.h"
 
@@ -248,6 +250,74 @@ zzChangeDisplaySettingsA(
     return real_ChangeDisplaySettingsA(lpDevMode, dwFlags);
 }
 
+BYTE* FindBytePattern(BYTE* start, int search_len, BYTE* pattern, int pattern_len) {
+    for (BYTE *end = start + search_len; start < end; start++) {
+        if (*start == *pattern) {
+            if (!memcmp(start, pattern, pattern_len)) {
+                return start;
+            }
+        }
+    }
+    return nullptr;
+}
+
+static decltype(LoadLibraryW) *real_LoadLibraryW = LoadLibraryW;
+_Ret_maybenull_
+HMODULE
+WINAPI
+zzLoadLibraryW(
+    _In_ LPCWSTR lpLibFileName
+) {
+    // intercept xigncode
+    if (wcsstr(lpLibFileName, L".xem")) {
+
+        // jump to the success branch in the caller:
+
+#if defined(_M_AMD64)
+
+        // mov eax, 1
+        BYTE pattern[] = { 0xb8, 1, 0, 0, 0 };
+
+        BYTE* r = FindBytePattern((BYTE*)_ReturnAddress(), 1000, pattern, 5);
+
+#elif defined(_M_IX86)
+
+        //004091b2 33c0            xor     eax,eax
+        //004091b4 83c40c          add     esp,0Ch
+        //004091b7 40              inc     eax
+        BYTE pattern[] = { 0x33, 0xc0, 0x83, 0xc4, 0x0c, 0x40 };
+
+        BYTE* r = FindBytePattern((BYTE*)_ReturnAddress(), 1000, pattern, 6);
+
+#endif
+
+        if (r) {
+            *(intptr_t*)_AddressOfReturnAddress() = (intptr_t)r;
+            return nullptr;
+        }
+    }
+
+    return real_LoadLibraryW(lpLibFileName);
+}
+
+static decltype(MessageBoxW) *real_MessageBoxW = MessageBoxW;
+int
+WINAPI
+zzMessageBoxW(
+    _In_opt_ HWND hWnd,
+    _In_opt_ LPCWSTR lpText,
+    _In_opt_ LPCWSTR lpCaption,
+    _In_ UINT uType) {
+
+    //Suppress the popup:
+    //Your PC has a high likelihood of getting hacked into or infected by viruses.\n Install vaccines to scan your computer, and use appropriate security services.
+    if (lpText && !wcsncmp(lpText, L"Your PC", 7)) {
+        return MB_OK;
+    }
+    return real_MessageBoxW(hWnd, lpText, lpCaption, uType);
+}
+
+
 bool GetOSVersion(RTL_OSVERSIONINFOW& osver) {
     osver = {sizeof(osver)};
     HMODULE hMod = GetModuleHandleW(L"ntdll.dll");
@@ -291,6 +361,11 @@ void InstallPatch()
 
     if (strstr(GetCommandLineA(), "-unlimited-gfx") > 0) {
         DetourAttach(&(PVOID&)real_ChangeDisplaySettingsA, zzChangeDisplaySettingsA);
+    }
+
+    if (strstr(GetCommandLineA(), "-disable-xigncode")) {
+        DetourAttach(&(PVOID&)real_LoadLibraryW, zzLoadLibraryW);
+        DetourAttach(&(PVOID&)real_MessageBoxW, zzMessageBoxW);
     }
 
     LONG error = DetourTransactionCommit();
