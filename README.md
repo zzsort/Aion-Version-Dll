@@ -20,7 +20,7 @@ Features:
 - Fixes the mouse issue on Windows 10 without needing to run a separate program. This feature is enabled by passing the -win10-mouse-fix command line argument to aion.bin.
 - The IP fix can be disabled with -disable-ip-fix in case you only want to use the mouse fix.
 
-Download: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.3.zip
+Download: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.4.zip
 
 To install, copy each version.dll to the respective bin32 or bin64 folder under the Aion client root.
 
