@@ -358,18 +358,18 @@ void InstallPatch()
     DetourUpdateThread(GetCurrentThread());
 
     if (!strstr(GetCommandLineA(), "-disable-ip-fix")) {
-        // 4.x and earlier
         if (GetServerIpFromCommandLine(s_serverIp, sizeof(s_serverIp))) {
+            // 4.x and earlier
             DetourAttach(&(PVOID&)real_inet_addr, zzinet_addr);
             DetourAttach(&(PVOID&)real_lstrcpynA, zzlstrcpynA);
-        }
 
-        // 5.x
-        HMODULE hmoduleMsvcr120 = GetModuleHandleA("msvcr120");
-        if (hmoduleMsvcr120) {
-            s_needPatch = true;
-            *(void**)&real_strtok_s = GetProcAddress(hmoduleMsvcr120, "strtok_s");
-            DetourAttach(&(PVOID&)real_strtok_s, zzstrtok_s);
+            // 5.x
+            HMODULE hmoduleMsvcr120 = GetModuleHandleA("msvcr120");
+            if (hmoduleMsvcr120) {
+                s_needPatch = true;
+                *(void**)&real_strtok_s = GetProcAddress(hmoduleMsvcr120, "strtok_s");
+                DetourAttach(&(PVOID&)real_strtok_s, zzstrtok_s);
+            }
         }
     }
 
