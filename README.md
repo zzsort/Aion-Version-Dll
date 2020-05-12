@@ -1,6 +1,24 @@
 # Aion-Version-Dll
 Aion 4.0 No-IP and Windows 10 mouse fix.
 
+This is a patch for Aion to remove the IP restriction and fix various bugs to help keep the game playable.
+
+## All options (pass to aion.bin):
+|argument|description|
+|--|--|
+|`-disable-ip-fix`|Disables the IP fix so you can use other features standalone such as the mouse fix.|
+|`-win10-mouse-fix`|Enables the mouse fix needed for the Windows bug introduced in Windows 10 Fall Creators Update. |
+|`-win10-mouse-fix-autodetect`|Enables the mouse fix only if the Windows version is detected to have the mouse bug.|
+|`-windowed-mouse-fix`|Can be used to enable only the windowed mouse fix (does not affect fullscreen modes). Fixes the problem of the mouse jumping to random locations. Works in Windows 7.|
+|`-unlimited-gfx`|Enables the graphics sliders in the graphics options that are grayed out in Aion 4.x when running at a high resolution.|
+|`-disable-xigncode`|Disables xigncode in Aion 5.8|
+
+## Changelog
+New features for 1.5:
+- New windowed mouse fix implementation using rawinput.
+- The windowed mouse fix also fixes the problem of the mouse cursor sometimes jumping out of the game window. Use the new `-windowed-mouse-fix` argument to enable only the windowed fix which should work on all operating systems. This argument can be combined with `-win10-mouse-fix` or `-win10-mouse-fix-autodetect`. Note, `-win10-mouse-fix` always enables the new windowed fix, and `-win10-mouse-fix-autodetect` enables the windowed fix only if it detects the Windows 10 mouse bug.
+- Tested on 4.0 only.
+
 New features for 1.4:
 - The IP fix now supports Aion 5.8.
 - Added `-disable-xigncode` command line option to prevent xigncode from loading. Only tested in 5.8.
@@ -20,16 +38,19 @@ Features:
 - Fixes the mouse issue on Windows 10 without needing to run a separate program. This feature is enabled by passing the `-win10-mouse-fix` command line argument to aion.bin.
 - The IP fix can be disabled with `-disable-ip-fix` in case you only want to use the mouse fix.
 
-Download: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.4.zip
+## Download
+Latest binaries: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.5.zip
 
-To install, copy each version.dll to the respective bin32 or bin64 folder under the Aion client root.
+## Install
+Extract both version.dll files from the .zip file to the respective bin32 or bin64 folder under the Aion client root. Aion will automatically load version.dll when it launches.
 
 Note: Existing patch dlls should be removed from the bin32/bin64 directories as they may have conflicting functionality.
 - Remove: dbghelp.dll
 - Remove: d3d8thk.dll
 - Remove: d3dx9_38.dll
 
-Tested with the Aion 4.0.0.12 game client on Windows 7 and Windows 10. 
+## Testing
+Mainly tested with the Aion 4.0.0.12 game client on Windows 7 and Windows 10. 
 
-Building:
+## Building
 This source code depends on Detours from https://github.com/Microsoft/Detours which must be built separately. Set the DETOURS_PATH environment variable to the Detours project root before opening the .sln.
