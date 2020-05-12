@@ -15,6 +15,36 @@ static char s_serverIp[16] = "";
 static bool s_needPatch = false;
 static bool s_gfxEnabled = false;
 
+#if 0
+CRITICAL_SECTION cs;
+static FILE* s_logFile = nullptr;
+
+void init_log() {
+    InitializeCriticalSection(&cs);
+    s_logFile = _fsopen("version.log", "a+", SH_DENYWR);
+}
+
+void log(const char *format, ...) {
+
+    if (!s_logFile) {
+        return;
+    }
+
+    EnterCriticalSection(&cs);
+
+    va_list(args);
+    fprintf(s_logFile, "[%d-tid:%x] ", GetTickCount(), GetCurrentThreadId());
+    va_start(args, format);
+    vfprintf(s_logFile, format, args);
+    fprintf(s_logFile, "\n");
+    fflush(s_logFile);
+
+    LeaveCriticalSection(&cs);
+}
+#else
+#define init_log()
+#endif
+
 bool GetServerIpFromCommandLine(char* buf, size_t bufsize) {
     const char* substr = strstr(GetCommandLineA(), "-ip:");
     if (substr) {
@@ -354,6 +384,8 @@ bool NeedsWin10MouseFix() {
 
 void InstallPatch() 
 {
+    init_log();
+
     DetourTransactionBegin();
     DetourUpdateThread(GetCurrentThread());
 
