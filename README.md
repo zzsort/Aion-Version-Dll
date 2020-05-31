@@ -16,7 +16,7 @@ This is a patch for Aion to remove the IP restriction and fix various bugs to he
 
 ## Changelog
 New features for 1.6.1:
-- For Aion 3.9, updated `-fix-39-weapon-switch` to allow switching a weapons from the skillbar.
+- For Aion 3.9, updated `-fix-39-weapon-switch` to allow switching weapons from the skillbar.
 
 New features for 1.6:
 - Made some changes to the windowed mouse fix to prevent the cursor from getting stuck.
