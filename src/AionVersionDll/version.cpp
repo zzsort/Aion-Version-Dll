@@ -481,22 +481,40 @@ void InstallWeaponSwitchFix() {
         return;
     }
 
+    bool foundChangeWeapon = false;
+    bool foundSkillbarWeapon = false;
+
     char* c = (char*)mbi.BaseAddress;
     char* end = c + mbi.RegionSize - sizeof(DWORD);
 
 
 #if defined(_M_AMD64)
     
-    // change je to jge:
-    // 4183FB35      cmp  r11d, 35
-    // 0F8488000000  je   Game + 3E8D9
     for (; c < end; c++) {
         DWORD* d = (DWORD*)c;
         if (*d == 1300920) {
-            BYTE pattern[] = { 0x35, 0x0f, 0x84  };
-            BYTE* p = FindBytePattern((BYTE*)d - 150, 150, pattern, 3);
-            if (p) {
-                p[2] = 0x8D;
+            if (!foundChangeWeapon) {
+                // change je to jge:
+                // 4183FB35      cmp  r11d, 35
+                // 0F8488000000  je   Game + 3E8D9
+                BYTE pattern[] = { 0x35, 0x0f, 0x84 };
+                BYTE* p = FindBytePattern((BYTE*)d - 150, 150, pattern, 3);
+                if (p) {
+                    p[2] = 0x8D;
+                    foundChangeWeapon = true;
+                    continue;
+                }
+            }
+            if (!foundSkillbarWeapon) {
+                // 74 54     je
+                BYTE pattern[] = { 0x74, 0x54 };
+                BYTE* p = FindBytePattern((BYTE*)d - 100, 100, pattern, 2);
+                if (p) {
+                    p[0] = 0xEB;
+                    foundSkillbarWeapon = true;
+                }
+            }
+            if (foundChangeWeapon && foundSkillbarWeapon) {
                 break;
             }
         }
@@ -505,16 +523,31 @@ void InstallWeaponSwitchFix() {
 
 #elif defined(_M_IX86)
 
-    // change je to jge:
-    // 83bd34ffffff35  cmp     dword ptr[ebp - 0CCh], 35h
-    // 744e            je      Game + 0x46ec
     for (; c < end; c++) {
         DWORD* d = (DWORD*)c;
         if (*d == 1300920) {
-            BYTE pattern[] = { 0x35, 0x74  };
-            BYTE* p = FindBytePattern((BYTE*)d - 150, 150, pattern, 2);
-            if (p) {
-                p[1] = 0x7D;
+            if (!foundChangeWeapon) {
+                // change je to jge:
+                // 83bd34ffffff35  cmp     dword ptr[ebp - 0CCh], 35h
+                // 744e            je      Game + 0x46ec
+                BYTE pattern[] = { 0x35, 0x74 };
+                BYTE* p = FindBytePattern((BYTE*)d - 150, 150, pattern, 2);
+                if (p) {
+                    p[1] = 0x7D;
+                    foundChangeWeapon = true;
+                    continue;
+                }
+            }
+            if (!foundSkillbarWeapon) {
+                // 74 31     je Game+188DB
+                BYTE pattern[] = { 0x74, 0x31 };
+                BYTE* p = FindBytePattern((BYTE*)d - 100, 100, pattern, 2);
+                if (p) {
+                    p[0] = 0xEB;
+                    foundSkillbarWeapon = true;
+                }
+            }
+            if (foundChangeWeapon && foundSkillbarWeapon) {
                 break;
             }
         }
