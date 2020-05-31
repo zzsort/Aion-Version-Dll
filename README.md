@@ -12,8 +12,14 @@ This is a patch for Aion to remove the IP restriction and fix various bugs to he
 |`-windowed-mouse-fix`|Can be used to enable only the windowed mouse fix (does not affect fullscreen modes). Fixes the problem of the mouse jumping to random locations. Works in Windows 7.|
 |`-unlimited-gfx`|Enables the graphics sliders in the graphics options that are grayed out in Aion 4.x when running at a high resolution.|
 |`-disable-xigncode`|Disables xigncode in Aion 5.8|
+|`-fix-39-weapon-switch`|Fixes a bug in 3.9 which prevents weapon switching when being attacked|
 
 ## Changelog
+New features for 1.6:
+- Made some changes to the windowed mouse fix to prevent the cursor from getting stuck.
+- The `-unlimited-gfx` option should work for windowed mode now.
+- Added `-fix-39-weapon-switch` to fix the weapon switching bug in Aion 3.9 which prevents switching weapons while being attacked. The changed code matches Aion 4.0 which doesn't have the bug.
+
 New features for 1.5:
 - New windowed mouse fix implementation using rawinput.
 - The windowed mouse fix also fixes the problem of the mouse cursor sometimes jumping out of the game window. Use the new `-windowed-mouse-fix` argument to enable only the windowed fix which should work on all operating systems. This argument can be combined with `-win10-mouse-fix` or `-win10-mouse-fix-autodetect`. Note, `-win10-mouse-fix` always enables the new windowed fix, and `-win10-mouse-fix-autodetect` enables the windowed fix only if it detects the Windows 10 mouse bug.
@@ -39,7 +45,7 @@ Features:
 - The IP fix can be disabled with `-disable-ip-fix` in case you only want to use the mouse fix.
 
 ## Download
-Latest binaries: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.5.zip
+Latest binaries: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.6.zip
 
 ## Install
 Extract both version.dll files from the .zip file to the respective bin32 or bin64 folder under the Aion client root. Aion will automatically load version.dll when it launches.
