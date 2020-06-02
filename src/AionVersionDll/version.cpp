@@ -120,7 +120,6 @@ char*  __cdecl zzstrtok_s(
 
 
 HWND clientHwnd = nullptr;
-HWND activeHwnd = nullptr;
 int clientLeft, clientTop;
 bool isCursorHidden;
 bool mouseHookInstalled = false;
@@ -238,6 +237,9 @@ LRESULT CALLBACK RawInputWndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM 
                 break;
         }
     }
+    else if (message == WM_INPUT) {
+        return 0;
+    }
     return CallWindowProc(g_realWndProc, hWnd, message, wParam, lParam);
 }
 
@@ -274,7 +276,7 @@ zzSetCursorPos(
     {
         result = real_SetCursorPos(X, Y);
 
-        if (!g_windowedMousefixOnly) {
+        if (!g_windowedMousefixOnly && GetActiveWindow() == clientHwnd) {
             POINT pt;
             real_GetCursorPos(&pt);
             ScreenToClient(clientHwnd, &pt);

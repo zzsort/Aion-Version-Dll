@@ -15,6 +15,9 @@ This is a patch for Aion to remove the IP restriction and fix various bugs to he
 |`-fix-39-weapon-switch`|Fixes a bug in 3.9 which prevents weapon switching when being attacked|
 
 ## Changelog
+New features for 1.6.2:
+- Fix delay problem when using alt+tab.
+
 New features for 1.6.1:
 - For Aion 3.9, updated `-fix-39-weapon-switch` to allow switching weapons from the skillbar.
 
@@ -48,7 +51,7 @@ Features:
 - The IP fix can be disabled with `-disable-ip-fix` in case you only want to use the mouse fix.
 
 ## Download
-Latest binaries: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.6.1.zip
+Latest binaries: https://github.com/zzsort/Aion-Version-Dll/blob/master/release/AionVersionDll_bin_1.6.2.zip
 
 ## Install
 Extract both version.dll files from the .zip file to the respective bin32 or bin64 folder under the Aion client root. Aion will automatically load version.dll when it launches.
